@@ -3,6 +3,15 @@
 スマホでソースを編集・コミット → GitHub Actionsでビルド → 更新ファイルをスマホに保存
 → Study Companionで取り込み → スマホ版と3DS版を更新できます。ビルド中にPCを起動しておく必要はありません。
 
+## このプロジェクトの実行ページ
+
+ソースとCI設定は [nisisou/StudyGadget](https://github.com/nisisou/StudyGadget) に登録済みです。
+スマホでは [Mobile CI](https://github.com/nisisou/StudyGadget/actions/workflows/mobile-update.yml) を開き、
+**Run workflow → target: 3ds → Run workflow** でビルドできます。
+`version_code` と `version_name` は空欄のままで使えます。
+Androidを含む `android` / `both` は、下の「初回：Androidの署名キー」を一度設定してください。
+ChatGPTの「自動レビュー」のリポジトリ選択は、このCIの実行には不要です。
+
 ## 今回用意したもの
 - .github/workflows/mobile-update.yml：手動ビルド・main/masterへのpushビルド。
 - 3ds / android / both の選択。最初は署名設定不要の3dsを選んでください。
@@ -12,7 +21,7 @@
 - Android APKは現在のアプリと同じ署名で作成。異なるキーはビルド前に拒否します。
 - 公開Releaseの作成や、自宅サーバーへの接続は行いません。
 
-## 初回：GitHubに登録する
+## 別のリポジトリへ登録する場合
 この作業フォルダーにはまだGitリポジトリとremoteの設定がありません。
 ChatGPTのGitHub連携を使う場合も、GitHubの保存先リポジトリを選ぶ必要があります。
 GitHub連携の失敗と、GitHub Actionsのビルド失敗は別です。
@@ -87,7 +96,10 @@ ChatGPT側のGitHub設定からアカウント接続状態を確認し、必要�
 
 ## 検証範囲
 入力検証、3種類の更新パッケージ作成、署名照合、ワークフロー構文をローカルで検証します。
-クラウドのDocker環境・GitHub Actionsでの実行は、リポジトリ登録後に確認が必要です。
+2026-10-23、[初回GitHub Actions実行](https://github.com/nisisou/StudyGadget/actions/runs/39875777511)で、
+3DSのソースビルド、キャラクター検証、更新ファイル作成、成果物アップロードまで成功しました。
+[初回の更新ファイル](https://github.com/nisisou/StudyGadget/actions/runs/39875777511/artifacts/12468800690)は14日間保存されます。
+AndroidのCI実行と、クラウドで生成した3DS版の実機起動は未確認です。
 devkitProコンテナーは公式 devkitpro/devkitarm:latest を使用します。
 特定の版に固定したい場合はGitHub ActionsのRepository Variable DEVKITPRO_IMAGEへ
 公式イメージの確認済みタグまたはdigestを登録してください。
