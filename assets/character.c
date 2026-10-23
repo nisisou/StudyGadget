@@ -11,6 +11,7 @@
 #define MAXB 96
 #define MAXV 24000
 #define MAXM 96
+_Static_assert(sizeof(float)==4,"SGCH requires 32-bit floats");
 typedef struct { char name[32]; int32_t parent; float local[16], inverse[16]; } Bone;
 typedef struct { float p[3],uv[2],color[4]; uint8_t bone[4]; float weight[4]; } Vertex;
 typedef struct { float p[3],uv[2],color[4]; } GPUVertex;
@@ -23,6 +24,10 @@ static Motion motions[MAXM]; static unsigned nm,revision;
 static DVLB_s *dvlb; static shaderProgram_s program; static int projection_loc;
 static C3D_Mtx projection;
 static bool shader_ready;
+static void trace(const char *message){
+    FILE *f=fopen("/3ds/studygadget/boot.log","a");
+    if(f){fprintf(f,"%llu character: %s\n",(unsigned long long)osGetTime(),message);fclose(f);}
+}
 static unsigned buffer_idx;
 static char status[80]="No character: copy model.sgch to SD";
 static float pose[MAXB][3], from_pose[MAXB][3], world[MAXB][16], rest[MAXB][16], skin[MAXB][16];
@@ -35,17 +40,25 @@ static void mul(float *o,const float *a,const float *b){float t[16];for(int i=0;
 static bool finite_array(const float *v,int n){for(int i=0;i<n;i++)if(!isfinite(v[i])||fabsf(v[i])>10000)return false;return true;}
 static void release(Model *m){free(m->bones);free(m->vertices);free(m->batch);if(m->gpu[0])linearFree(m->gpu[0]);if(m->gpu[1])linearFree(m->gpu[1]);if(m->tex.data)C3D_TexDelete(&m->tex);memset(m,0,sizeof *m);}
 bool character_load(const char *path){
-    FILE *f=fopen(path,"rb");if(!f)return false;
+    if(!shader_ready){snprintf(status,sizeof status,"Character: shader unavailable");return false;}
+    FILE *f=fopen(path,"rb");
+    if(!f){if(!model.h.bones&&strstr(path,"model.sgch"))snprintf(status,sizeof status,"Character: model.sgch missing on SD");return false;}
+    trace("reading SGCH");
+    const char *error="invalid header";
     char magic[4];Model next={0};unsigned char *data=NULL;bool ok=false;
     if(fread(magic,1,4,f)!=4||memcmp(magic,"SGCH",4)||fread(&next.h,1,sizeof(Header),f)!=sizeof(Header))goto done;
     Header h=next.h;
     if(h.version!=1||!h.bones||h.bones>MAXB||!h.vertices||h.vertices>MAXV||h.vertices%3||!h.batches||h.batches>64||h.texture<8||h.texture>1024||(h.texture&(h.texture-1)))goto done;
     uint32_t expected=h.bones*sizeof(Bone)+h.batches*sizeof(Batch)+h.vertices*sizeof(Vertex)+h.texture*h.texture*4;
     if(h.bytes!=expected||h.bytes>8*1024*1024)goto done;
-    data=malloc(h.bytes);if(!data||fread(data,1,h.bytes,f)!=h.bytes||fgetc(f)!=EOF||crc32(data,h.bytes)!=h.crc)goto done;
+    error="model data allocation failed";data=malloc(h.bytes);if(!data)goto done;
+    error="truncated data or checksum mismatch";
+    if(fread(data,1,h.bytes,f)!=h.bytes||fgetc(f)!=EOF||crc32(data,h.bytes)!=h.crc)goto done;
+    trace("checksum OK; allocating model");error="model buffer allocation failed";
     next.bones=malloc(h.bones*sizeof(Bone));next.vertices=malloc(h.vertices*sizeof(Vertex));next.batch=malloc(h.batches*sizeof(Batch));
     next.gpu[0]=linearAlloc(h.vertices*sizeof(GPUVertex));next.gpu[1]=linearAlloc(h.vertices*sizeof(GPUVertex));
     if(!next.bones||!next.vertices||!next.batch||!next.gpu[0]||!next.gpu[1])goto done;
+    error="invalid bones, vertices or batches";
     size_t off=0;memcpy(next.bones,data,h.bones*sizeof(Bone));off+=h.bones*sizeof(Bone);
     memcpy(next.batch,data+off,h.batches*sizeof(Batch));off+=h.batches*sizeof(Batch);
     memcpy(next.vertices,data+off,h.vertices*sizeof(Vertex));off+=h.vertices*sizeof(Vertex);
@@ -57,13 +70,19 @@ bool character_load(const char *path){
         Vertex *v=&next.vertices[i];if(!finite_array(v->p,9)||!finite_array(v->weight,4))goto done;
         float sum=0;for(int k=0;k<4;k++){if(v->bone[k]>=h.bones||v->weight[k]<0||v->weight[k]>1)goto done;sum+=v->weight[k];}if(fabsf(sum-1)>0.01f)goto done;
     }
+    trace("model validated; allocating texture");error="texture allocation failed";
     if(!C3D_TexInit(&next.tex,h.texture,h.texture,GPU_RGBA8))goto done;
     C3D_TexUpload(&next.tex,data+off);C3D_TexSetFilter(&next.tex,GPU_LINEAR,GPU_LINEAR);C3D_TexSetWrap(&next.tex,GPU_CLAMP_TO_EDGE,GPU_CLAMP_TO_EDGE);
-    C3D_FrameSync();release(&model);model=next;memset(&next,0,sizeof next);
+    // Caller has acquired an idle GPU frame, before issuing any draw commands.
+    trace("texture uploaded; replacing idle model");release(&model);model=next;memset(&next,0,sizeof next);
     for(unsigned i=0;i<h.bones;i++){Bone *b=&model.bones[i];if(b->parent<0)memcpy(rest[i],b->local,64);else mul(rest[i],rest[b->parent],b->local);}
     memset(pose,0,sizeof pose);memset(from_pose,0,sizeof from_pose);last_state=-1;selected=-1;nm=0;revision=0;
     snprintf(status,sizeof status,"Character: %lu bones / %lu tris",(unsigned long)h.bones,(unsigned long)h.vertices/3);ok=true;
-done:free(data);fclose(f);release(&next);return ok;
+done:
+    if(!ok){char line[128];snprintf(line,sizeof line,"%s: %s",path,error);trace(line);
+        if(!model.h.bones)snprintf(status,sizeof status,"Character: %s",error);}
+    else trace(status);
+    free(data);fclose(f);release(&next);return ok;
 }
 bool character_motions(const char *path){
     FILE *f=fopen(path,"r");if(!f)return false;
@@ -78,10 +97,22 @@ bool character_motions(const char *path){
     if(ok){memcpy(motions,next,count*sizeof(Motion));nm=count;revision=rev;selected=-1;last_state=-1;}fclose(f);return ok;
 }
 bool character_init(const char *path){
-    dvlb=DVLB_ParseFile((u32*)character_shader,character_shader_size);if(!dvlb)return false;
-    shaderProgramInit(&program);shaderProgramSetVsh(&program,&dvlb->DVLE[0]);projection_loc=shaderInstanceGetUniformLocation(program.vertexShader,"projection");
+    trace("shader parse begin");
+    dvlb=DVLB_ParseFile((u32*)character_shader,character_shader_size);
+    if(!dvlb||!dvlb->numDVLE)goto shader_error;
+    if(R_FAILED(shaderProgramInit(&program)))goto shader_error;
+    if(R_FAILED(shaderProgramSetVsh(&program,&dvlb->DVLE[0])))goto program_error;
+    projection_loc=shaderInstanceGetUniformLocation(program.vertexShader,"projection");
+    // An unchecked -1 would write before Citro3D's float-uniform array.
+    if(projection_loc<0||projection_loc+4>C3D_FVUNIF_COUNT)goto program_error;
     Mtx_OrthoTilt(&projection,-.64f,.64f,-.45f,.45f,.01f,10.f,false);shader_ready=true;
+    trace("shader linked");
     return character_load(path);
+program_error:
+    shaderProgramFree(&program);
+shader_error:
+    if(dvlb){DVLB_Free(dvlb);dvlb=NULL;}
+    snprintf(status,sizeof status,"Character: shader initialization failed");trace(status);return false;
 }
 static void angles(const char *name,CharacterState state,float t,const Motion *m,float *a){
     a[0]=a[1]=a[2]=0;float s=sinf(t*m->speed*1.5f+m->phase),q=sinf(t*m->speed*.63f+m->phase),amp=m->intensity;
@@ -138,9 +169,9 @@ void character_draw(CharacterState state,float seconds){
     C3D_TexEnv *env=C3D_GetTexEnv(0);C3D_TexEnvSrc(env,C3D_Both,GPU_TEXTURE0,GPU_PRIMARY_COLOR,0);C3D_TexEnvFunc(env,C3D_Both,GPU_MODULATE);
     C3D_AlphaTest(true,GPU_GREATER,8);C3D_DepthTest(true,GPU_GREATER,GPU_WRITE_ALL);
     for(unsigned i=0;i<model.h.batches;i++){Batch b=model.batch[i];C3D_CullFace(b.cull==1?GPU_CULL_BACK_CCW:b.cull==2?GPU_CULL_FRONT_CCW:GPU_CULL_NONE);C3D_DrawArrays(GPU_TRIANGLES,b.start,b.count);}
-    C3D_AlphaTest(false,GPU_ALWAYS,0);C3D_CullFace(GPU_CULL_NONE);C2D_Prepare();
+    C3D_AlphaTest(false,GPU_ALWAYS,0);C3D_DepthTest(false,GPU_ALWAYS,GPU_WRITE_COLOR);C3D_CullFace(GPU_CULL_NONE);C2D_Prepare();
 }
-void character_fini(void){C3D_FrameSync();release(&model);if(shader_ready){shaderProgramFree(&program);DVLB_Free(dvlb);}shader_ready=false;}
+void character_fini(void){release(&model);if(shader_ready){shaderProgramFree(&program);DVLB_Free(dvlb);}shader_ready=false;}
 uint32_t character_crc(void){return model.h.crc;}
 uint32_t character_skeleton(void){return model.h.skeleton;}
 uint32_t character_revision(void){return revision;}

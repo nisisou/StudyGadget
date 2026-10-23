@@ -55,6 +55,7 @@ static u64 character_clock,success_until;
 static char boot_stage[64]="UI ready; loading SD settings";
 static char network_status[96]="NET: waiting for UI";
 static bool boot_ready, safe_mode, character_visible=true;
+static bool character_frame_submitted, character_frame_verified;
 static int pending_count;
 static u64 request_started;
 typedef enum { REQUEST_NONE, REQUEST_INIT, REQUEST_CONFIG, REQUEST_LOG, REQUEST_EVENT, REQUEST_UPDATE_CHECK, REQUEST_UPDATE_FILE, REQUEST_DEV_CONTROL } RequestKind;
@@ -305,9 +306,8 @@ static void text(float x, float y, float s, u32 c, u32 fl, const char *fmt, ...)
     C2D_DrawText(&t, C2D_WithColor | fl, x, y, 0.5f, s, s, c);
 }
 static void rrect(float x, float y, float w, float h, float r, u32 c) {
-    C2D_DrawRectSolid(x + r, y, 0.1f, w - 2 * r, h, c); C2D_DrawRectSolid(x, y + r, 0.1f, w, h - 2 * r, c);
-    C2D_DrawCircleSolid(x + r, y + r, 0.1f, r, c);     C2D_DrawCircleSolid(x + w - r, y + r, 0.1f, r, c);
-    C2D_DrawCircleSolid(x + r, y + h - r, 0.1f, r, c); C2D_DrawCircleSolid(x + w - r, y + h - r, 0.1f, r, c);
+    (void)r;
+    C2D_DrawRectSolid(x, y, 0.1f, w, h, c);
 }
 static void ring(float cx, float cy, float r, float th, float f, u32 c) {
     int n = 72, k = (int)(f * n + 0.5f);
@@ -333,7 +333,7 @@ static void draw_top(void) {
     text(14, 32, 0.45f, MUTED, 0, "%04d/%02d/%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
     text(386, 10, 0.5f, MUTED, C2D_AlignRight, "TODAY %ldh%02ldm", (today + el) / 3600, (today + el) % 3600 / 60);
     bool busy=active_request!=REQUEST_NONE;
-    C2D_DrawCircleSolid(380, 38, 0.2f, 5, busy?(osGetTime()/300%2?C(255,200,64):PANEL):net_ok?GREEN:C(90,96,120));
+    C2D_DrawRectSolid(375, 33, 0.2f, 10, 10, busy?(osGetTime()/300%2?C(255,200,64):PANEL):net_ok?GREEN:C(90,96,120));
     text(367,32,.35f,MUTED,C2D_AlignRight,busy?"CONNECTING":net_ok?"ONLINE":"OFFLINE");
     float f = MODES[mode].up ? (el % 3600) / 3600.f : (target ? (float)(target - (running ? el : 0)) / target : 0);
     if (!running && !MODES[mode].up) f = 1;
@@ -341,11 +341,11 @@ static void draw_top(void) {
     text(113, 96, 1.2f, WHITE, C2D_AlignCenter, "%02ld:%02ld", shown / 60, shown % 60);
     text(113, 145, 0.55f, acc, C2D_AlignCenter, "%s", brk ? "BREAK" : running ? active_subject.label : S[cur].label);
     text(113, 169, 0.4f, MUTED, C2D_AlignCenter, "%s%s", MODES[mode].name, running ? "  ●" : "");
-    if (mode == 1) for (int i = 0; i < 4; i++) C2D_DrawCircleSolid(89 + i * 16, 208, 0.3f, 4, i < cycle % 4 ? acc : PANEL);
+    if (mode == 1) for (int i = 0; i < 4; i++) C2D_DrawRectSolid(85 + i * 16, 204, 0.3f, 8, 8, i < cycle % 4 ? acc : PANEL);
     CharacterState state=osGetTime()<success_until?CHAR_SUCCESS:running?(brk?CHAR_BREAK:CHAR_FOCUS):(tm.tm_hour>=23||tm.tm_hour<6)?CHAR_SLEEP:CHAR_IDLE;
     if(!running&&state==CHAR_IDLE&&today>0&&today<1500&&tm.tm_hour>=18)state=CHAR_ENCOURAGE;
     if(character_visible && boot_ready)character_draw(state,(float)(osGetTime()-character_clock)/1000.f);
-    if(!character_crc()||!character_visible)text(300,210,.35f,MUTED,C2D_AlignCenter,safe_mode?"SAFE MODE: character skipped":!character_visible?"Character hidden (X)":"Copy model.sgch to SD");
+    if(!character_crc()||!character_visible)text(300,210,.35f,MUTED,C2D_AlignCenter,safe_mode?"SAFE MODE: character skipped":!character_visible?"Character hidden (X)":"See CHAR status on bottom screen");
 }
 static const char *network_stage_name(void) {
     switch(network_client_stage()){
@@ -359,7 +359,7 @@ static const char *network_stage_name(void) {
 }
 static void draw_bottom(void) {
     C2D_DrawRectangle(0,0,0,320,240,C(24,28,46),C(24,28,46),C(12,14,26),C(12,14,26));
-    text(8,2,.35f,MUTED,0,"STUDY GADGET 2.2   %s",msg);
+    text(8,2,.35f,MUTED,0,"STUDY GADGET 2.3   %s",msg);
     if(!boot_ready)text(8,16,.4f,C(255,200,64),0,"BOOT: %s",boot_stage);
     else if(active_request!=REQUEST_NONE)text(8,16,.4f,C(255,200,64),0,"NET: %s (%llus)",network_stage_name(),(unsigned long long)((osGetTime()-request_started)/1000));
     else text(8,16,.4f,net_ok?GREEN:MUTED,0,"%s",network_status);
@@ -373,7 +373,7 @@ static void draw_bottom(void) {
         text(8,30,.35f,C(255,200,64),0,"CHAR: %s %lu/%lu KB",progress.stage==CHAR_SYNC_MODEL?"model":"motions",(unsigned long)progress.received/1024,(unsigned long)progress.total/1024);
     else if(progress.stage==CHAR_SYNC_ERROR && progress.http_code>0 && progress.http_code!=200)
         text(8,30,.35f,MUTED,0,"CHAR: HTTP %d; files kept; retry SYNC",progress.http_code);
-    else text(8,30,.35f,MUTED,0,"CHAR: %s",safe_mode?"skipped in safe mode":character_sync_status());
+    else text(8,30,.35f,MUTED,0,"CHAR: %s",safe_mode?"skipped in safe mode":!character_crc()?character_status():character_sync_status());
     for(int i=0;i<ns;i++)if(btn(8+(i%3)*104,48+(i/3)*24,96,20,S[i].col,S[i].label,!running,i==cur))cur=i;
     for(int i=0;i<NMODES;i++)
         if(btn(8+i*104,122,96,24,C(70,78,120),MODES[i].name,!running,i==mode)){mode=i;brk=false;if(i==0)mins=MODES[0].mins;set_target();}
@@ -394,6 +394,37 @@ static void draw_bottom(void) {
     text(312,224,.35f,MUTED,C2D_AlignRight,"pending %d",pending_count);
     text(8,224,.35f,MUTED,0,"PHONE %s%s",!strcmp(ip,"auto")?"AUTO ":"",connected_peer[0]?connected_peer:"--");
 }
+static int raw_bottom_test(void) {
+    u16 width=0,height=0;
+    if(!gfxGetFramebuffer(GFX_BOTTOM,GFX_LEFT,&width,&height)||!width||!height)return 1;
+    gfxSetDoubleBuffering(GFX_BOTTOM,false);
+    u8 *framebuffer=gfxGetFramebuffer(GFX_BOTTOM,GFX_LEFT,NULL,NULL);
+    if(!framebuffer)return 1;
+    size_t bytes=(size_t)width*height*gspGetBytesPerPixel(gfxGetScreenFormat(GFX_BOTTOM));
+    u64 next_color=0;bool white=false;
+    while(aptMainLoop()){
+        hidScanInput();
+        if(hidKeysDown()&KEY_SELECT)break;
+        if(osGetTime()>=next_color){
+            white=!white;
+            next_color=osGetTime()+1000;
+            memset(framebuffer,white?0xFF:0,bytes);
+            gfxFlushBuffers();
+            gfxScreenSwapBuffers(GFX_BOTTOM,false);
+        }
+        gspWaitForVBlank();
+    }
+    return 0;
+}
+// NONBLOCK skips Citro3D's unbounded GPU queue wait. VBlank alone is not a GPU fence.
+static bool begin_gpu_frame(void) {
+    u64 started=osGetTime();
+    do {
+        if(C3D_FrameBegin(C3D_FRAME_NONBLOCK))return true;
+        svcSleepThread(1000000);
+    } while(osGetTime()-started<3000);
+    return false;
+}
 static int graphics_failure(const char *reason) {
     boot_log(reason);consoleInit(GFX_BOTTOM,NULL);
     printf("\x1b[2JStudy Gadget startup error\n\n%s\n\nSee /3ds/studygadget/boot.log\nSELECT: return to HBL\n",reason);
@@ -405,31 +436,36 @@ static int graphics_failure(const char *reason) {
 }
 
 int main(int argc,char **argv) {
-    gfxInitDefault();consoleInit(GFX_BOTTOM,NULL);
-    printf("Study Gadget 2.2\nStarting graphics...\nHold X: skip character\n");
-    gfxFlushBuffers();gfxSwapBuffers();gspWaitForVBlank();
+    gfxInitDefault();
+    hidScanInput();
+    if(hidKeysHeld()&KEY_START){int result=raw_bottom_test();gfxExit();return result;}
     mkdir("/3ds",0777);mkdir(DIR_,0777);
     remove(DIR_ "boot.previous.log");rename(DIR_ "boot.log",DIR_ "boot.previous.log");
-    boot_log("entry: framebuffer console displayed");
+    boot_log("entry: graphics initialization");
     if(!C3D_Init(C3D_DEFAULT_CMDBUF_SIZE))return graphics_failure("C3D_Init failed");
     boot_log("C3D_Init OK");
     if(!C2D_Init(C2D_DEFAULT_MAX_OBJECTS))return graphics_failure("C2D_Init failed");
     C2D_Prepare();boot_log("C2D_Init OK");
-    C3D_RenderTarget *top=C3D_RenderTargetCreate(240,400,GPU_RB_RGBA8,GPU_RB_DEPTH24_STENCIL8);
+    C3D_RenderTarget *top=C2D_CreateScreenTarget(GFX_TOP,GFX_LEFT);
     if(!top)return graphics_failure("Top render target failed");
-    C3D_RenderTargetSetOutput(top,GFX_TOP,GFX_LEFT,GX_TRANSFER_FLIP_VERT(0)|GX_TRANSFER_OUT_TILED(0)|GX_TRANSFER_RAW_COPY(0)|GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGBA8)|GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB8)|GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO));
+    {
+        char line[96];
+        snprintf(line,sizeof line,"graphics: Citro2D top target; build %s %s",__DATE__,__TIME__);
+        boot_log(line);
+    }
     C3D_RenderTarget *bot=C2D_CreateScreenTarget(GFX_BOTTOM,GFX_LEFT);
     tb=C2D_TextBufNew(4096);
     if(!bot||!tb)return graphics_failure("UI memory allocation failed");
     parse_subjects("english,ENGLISH,60A5FA\nmath,MATH,F59E0B\njapanese,JAPANESE,F472B6\n");set_target();
-    int boot_step=0,boot_wait=2;u64 last_frame=osGetTime();
+    int boot_step=0,boot_wait=2;bool startup_done=false;
     while(aptMainLoop()){
         hidScanInput();u32 kd=hidKeysDown();touchPosition tp;hidTouchRead(&tp);
         if((kd&KEY_SELECT)||exit_requested)break;
-        if(!boot_ready){if(hidKeysHeld()&KEY_X)safe_mode=true;}
+        if(!boot_ready){
+            if(hidKeysHeld()&KEY_X)safe_mode=true;
+        }
         else{
             if(kd&KEY_X)character_visible=!character_visible;
-            if(character_sync_poll())snprintf(msg,sizeof msg,"character updated");
             network_tick();
             if(soc_ok&&cfg_ok&&osGetTime()-dev_last_check>=5000&&!update_apply_pending&&
                app_update_state()!=APP_UPDATE_DOWNLOADING&&app_update_state()!=APP_UPDATE_CHECKING){
@@ -456,24 +492,20 @@ int main(int argc,char **argv) {
         }
         tap=boot_ready&&(kd&KEY_TOUCH);tx=tp.px;ty=tp.py;
         if(flash)flash--;
-        // Keep input responsive even if the GPU did not finish its previous frame.
-        if(!C3D_FrameBegin(C3D_FRAME_NONBLOCK)){
-            if(osGetTime()-last_frame>3000)return graphics_failure("GPU stalled; try holding X at launch");
-            gspWaitForVBlank();continue;
+        if(!begin_gpu_frame()){
+            char reason[192];
+            snprintf(reason,sizeof reason,
+                "GPU timeout (3s); boot=%d safe=%d char=%d net=%s",
+                boot_ready?1:0,safe_mode?1:0,character_visible?1:0,network_stage_name());
+            return graphics_failure(reason);
         }
-        C2D_TextBufClear(tb);
-        C2D_TargetClear(top,C(0,0,0));C2D_SceneBegin(top);draw_top();
-        C2D_TargetClear(bot,C(0,0,0));C2D_SceneBegin(bot);draw_bottom();
-        C3D_FrameEnd(0);last_frame=osGetTime();gspWaitForVBlank();
-        if(update_apply_pending&&!running){
-            update_apply_pending=false;bool installed=app_update_install();boot_log(app_update_status());
-            if(dev_automatic){
-                dev_report(installed?"installed":"error",installed?"":"SD install failed; original kept");
-                if(installed)dev_restart_at=osGetTime()+2000;
-                dev_automatic=false;
-            }
+        if(character_frame_submitted&&!character_frame_verified){
+            character_frame_verified=true;boot_log("character: first GPU frame completed");
         }
-        if(!boot_ready&&boot_wait--<=0){
+        // The previous GPU queue is now finished. Load/replace/free models before
+        // submitting this frame's draws; never free a VBO still used by the GPU.
+        if(boot_ready&&character_sync_poll())snprintf(msg,sizeof msg,"character updated");
+        if(!startup_done&&boot_wait--<=0){
             boot_wait=2;
             switch(boot_step++){
                 case 0:{
@@ -487,23 +519,50 @@ int main(int argc,char **argv) {
                 }
                 case 1:
                     if(!safe_mode){
+                        boot_log("character: initialization begin");
                         character_init(DIR_ "model.sgch");
                         if(!character_crc())character_load(DIR_ "model.previous");
+                        boot_log(character_status());
                     }else character_visible=false;
                     boot_note(safe_mode?"Character skipped; starting offline":"Loading motions");break;
                 case 2:
-                    if(!safe_mode&&!character_motions(DIR_ "motions.sgmo"))character_motions(DIR_ "motions.previous");
-                    boot_note("UI ready; starting Wi-Fi worker");break;
+                    if(!safe_mode&&!character_motions(DIR_ "motions.sgmo"))
+                        if(!character_motions(DIR_ "motions.previous"))boot_log("character: no valid motions; using built-in motion");
+                    boot_note("Motions ready; preparing first character frame");break;
                 case 3:
                     character_clock=last_character_sync=osGetTime();boot_ready=true;
                     boot_log(character_status());
+                    boot_note("UI ready; testing character frame");break;
+                case 4:
+                    startup_done=true;
                     if(network_client_initialize()){active_request=REQUEST_INIT;request_started=osGetTime();want_config=want_character=cfg_ok;}
                     else snprintf(network_status,sizeof network_status,"NET: worker failed; retry SYNC");
                     boot_log("startup complete; asynchronous network scheduled");break;
             }
         }
+        if(boot_ready&&character_visible&&character_crc()&&!character_frame_submitted)
+            boot_log("character: first draw begin");
+        C2D_TextBufClear(tb);
+        C2D_TargetClear(top,C(0,0,0));C2D_SceneBegin(top);draw_top();
+        C2D_TargetClear(bot,C(0,0,0));C2D_SceneBegin(bot);draw_bottom();
+        C3D_FrameEnd(0);
+        if(boot_ready&&character_visible&&character_crc()&&!character_frame_submitted){
+            character_frame_submitted=true;boot_log("character: first GPU frame submitted");
+        }
+        gspWaitForVBlank();
+        if(update_apply_pending&&!running){
+            update_apply_pending=false;bool installed=app_update_install();boot_log(app_update_status());
+            if(dev_automatic){
+                dev_report(installed?"installed":"error",installed?"":"SD install failed; original kept");
+                if(installed)dev_restart_at=osGetTime()+2000;
+                dev_automatic=false;
+            }
+        }
+
     }
     if(running)end_session(false);
-    close_upload();character_sync_stop();network_client_shutdown();character_fini();
+    close_upload();character_sync_stop();network_client_shutdown();
+    if(!begin_gpu_frame())return graphics_failure("GPU timeout during exit; resources kept until process exits");
+    character_fini();C3D_FrameEnd(0);
     C2D_TextBufDelete(tb);C2D_Fini();C3D_Fini();gfxExit();return 0;
 }

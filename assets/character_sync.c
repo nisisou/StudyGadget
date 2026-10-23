@@ -44,11 +44,12 @@ static int get(const char *path,FILE *file,char *text,size_t cap,size_t limit){
     int s=socket(AF_INET,SOCK_STREAM,0);if(s<0)return -1;
     struct sockaddr_in a={0};a.sin_family=AF_INET;a.sin_port=htons(server_port);
     if(!inet_aton(peer,&a.sin_addr)){close(s);return -1;}
-    fcntl(s,F_SETFL,O_NONBLOCK);int e=connect(s,(struct sockaddr*)&a,sizeof a);
-    struct pollfd p={s,POLLOUT,0};
-    if(e<0&&errno!=EINPROGRESS){close(s);return -1;}
-    int err=0;socklen_t es=sizeof err;
-    if(poll(&p,1,3000)<=0||getsockopt(s,SOL_SOCKET,SO_ERROR,&err,&es)<0||err){close(s);return -1;}
+    int flags=fcntl(s,F_GETFL,0);
+    if(flags<0||fcntl(s,F_SETFL,flags|O_NONBLOCK)<0||
+       !network_peer_connect(s,(struct sockaddr*)&a,sizeof a,osGetTime()+3000,cancelled)){
+        close(s);return -1;
+    }
+    struct pollfd p={s,POLLIN,0};
     char request[512];int len=snprintf(request,sizeof request,"GET %s HTTP/1.1\r\nHost: %s:%d\r\nAuthorization: Bearer %s\r\nConnection: close\r\n\r\n",path,peer,server_port,auth);
     int sent=0;u64 deadline=osGetTime()+45000;
     while(sent<len&&osGetTime()<deadline&&!cancelled()){p.events=POLLOUT;if(poll(&p,1,1000)<=0)continue;int n=send(s,request+sent,len-sent,0);if(n<0&&(errno==EAGAIN||errno==EWOULDBLOCK||errno==EINTR))continue;if(n<=0){close(s);return -1;}sent+=n;}

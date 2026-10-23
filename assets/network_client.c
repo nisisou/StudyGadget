@@ -114,11 +114,7 @@ static int exchange(void) {
     struct sockaddr_in address={0}; address.sin_family=AF_INET; address.sin_port=htons(job.port);
     if (inet_pton(AF_INET,result.peer,&address.sin_addr)!=1) { errno=EINVAL; goto end; }
     set_stage(NET_CONNECTING);
-    if (connect(s,(struct sockaddr *)&address,sizeof address)<0 && errno!=EINPROGRESS && errno!=EWOULDBLOCK) goto end;
-    if (wait_socket(s,POLLOUT,deadline)<0) goto end;
-    int error=0; socklen_t length=sizeof error;
-    if (getsockopt(s,SOL_SOCKET,SO_ERROR,&error,&length)<0) goto end;
-    if (error) { errno=error; goto end; }
+    if (!network_peer_connect(s,(struct sockaddr *)&address,sizeof address,deadline,cancelled)) goto end;
     char request[1024];
     int size=snprintf(request,sizeof request,
         "%s %s HTTP/1.1\r\nHost: %s:%d\r\nAuthorization: Bearer %s\r\nContent-Type: application/json\r\nContent-Length: %u\r\nConnection: close\r\n\r\n%s",

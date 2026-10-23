@@ -4,6 +4,7 @@
 typedef enum { CHAR_IDLE, CHAR_FOCUS, CHAR_BREAK, CHAR_SUCCESS, CHAR_ENCOURAGE, CHAR_SLEEP } CharacterState;
 bool character_init(const char *path);
 void character_fini(void);
+// Call load/init/fini only after a successful FrameBegin and before any draws.
 bool character_load(const char *path);
 bool character_motions(const char *path);
 void character_draw(CharacterState state, float seconds);
