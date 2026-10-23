@@ -2,7 +2,7 @@ package com.example.studycompanion.update
 
 fun updateWebHtml() = """<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Study Gadget 更新</title>
 <style>body{font:17px system-ui;max-width:640px;margin:36px auto;padding:20px;background:#101828;color:#eef4ff}button,input{font:inherit;padding:12px;margin:10px 0;max-width:100%}button{background:#81d5b5;border:0;border-radius:10px}pre{white-space:pre-wrap}a{color:#9bdcff}</style>
-<h1>アプリの更新・アップロード</h1><p>APK・Study Gadget用3DSX・sgupdateを選んでください。</p><input type="file" id="file" accept=".apk,.3dsx,.sgupdate,.zip"><br><button id="upload">取り込む</button><pre id="status" role="status"></pre><p>3DS版はUPDATE→INSTALLで受信します。スマホ版はアプリの更新画面からインストールしてください。</p>
+<h1>アプリの更新・アップロード</h1><p>APK・Study Gadget用3DSX・FBI用CIA・sgupdateを選んでください。</p><input type="file" id="file" accept=".apk,.3dsx,.cia,.sgupdate,.zip"><br><button id="upload">取り込む</button><pre id="status" role="status"></pre><p>3DSX版はUPDATE→INSTALLで受信します。CIA版は更新画面のQRコードをFBIのRemote Install→Scan QR Codeで読み取ってください。スマホ版はアプリの更新画面からインストールしてください。</p>
 <script>
 const token=new URLSearchParams(location.search).get('t')||'';
 const status=document.getElementById('status'),button=document.getElementById('upload');

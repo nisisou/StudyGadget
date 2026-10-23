@@ -1,5 +1,5 @@
 name: Mobile CI
-run-name: Mobile CI / ${{ inputs.target || vars.MOBILE_CI_TARGET || '3ds' }} / ${{ github.ref_name }}
+run-name: Mobile CI / ${{ inputs.target || vars.MOBILE_CI_TARGET || '3ds' }} / ${{ github.ref_name }}${{ inputs.request_id && format(' / {0}', inputs.request_id) || '' }}
 on:
   workflow_dispatch:
     inputs:
@@ -9,6 +9,10 @@ on:
         options: ['3ds', 'both', 'android']
         default: '3ds'
         required: true
+      request_id:
+        description: 'App request ID (leave blank for manual builds)'
+        type: string
+        required: false
       version_code:
         description: 'Android versionCode (blank = 100000 + CI run number)'
         type: string

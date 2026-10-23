@@ -11,6 +11,7 @@ import com.example.studycompanion.domain.ext.MediaBackend
 import com.example.studycompanion.domain.models.MediaCommand
 import com.example.studycompanion.domain.models.Session
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
@@ -35,6 +36,7 @@ import com.example.studycompanion.update.updateWebHtml
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.response.respondBytes
+import io.ktor.server.response.respondOutputStream
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.example.studycompanion.character.CharacterStore
@@ -138,6 +140,20 @@ class KtorServer @Inject constructor(
             get("/api/update/manifest") {
                 val manifest=withContext(Dispatchers.IO){UpdateStore(context).manifest()}
                 if(manifest==null)call.respond(HttpStatusCode.NoContent) else call.respondBytes(manifest,ContentType.Text.Plain)
+            }
+            get("/api/update/3ds/app.cia") {
+                val file=withContext(Dispatchers.IO){UpdateStore(context).ciaFile()}
+                if(file==null){
+                    call.respond(HttpStatusCode.NotFound)
+                }else{
+                    call.response.headers.append(HttpHeaders.ContentDisposition,"attachment; filename=\"studygadget.cia\"")
+                    call.respondOutputStream(
+                        contentType=ContentType.parse("application/x-3ds-cia"),
+                        contentLength=file.length()
+                    ) {
+                        file.inputStream().use { input -> input.copyTo(this) }
+                    }
+                }
             }
             get("/api/update/3ds/{sha}") {
                 val file=UpdateStore(context).blob("3ds",call.parameters["sha"] ?: "")

@@ -15,8 +15,8 @@ android {
         applicationId = "com.example.studycompanion"
         minSdk = 26
         targetSdk = 35
-        versionCode = providers.gradleProperty("appVersionCode").orNull?.toInt() ?: 6
-        versionName = providers.gradleProperty("appVersionName").orNull ?: "1.4-mobile-update"
+        versionCode = providers.gradleProperty("appVersionCode").orNull?.toInt() ?: 7
+        versionName = providers.gradleProperty("appVersionName").orNull ?: "1.5-app-ci"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

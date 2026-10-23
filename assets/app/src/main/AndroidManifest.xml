@@ -21,6 +21,8 @@
         android:networkSecurityConfig="@xml/character_network"
         android:theme="@style/Theme.StudyCompanion">
 
+        <activity android:name=".update.GitHubCiActivity" android:exported="false" android:label="GitHub CI" />
+
         <activity android:name=".update.UpdateActivity" android:exported="true" android:launchMode="singleTop" android:label="Study Gadget 更新">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />

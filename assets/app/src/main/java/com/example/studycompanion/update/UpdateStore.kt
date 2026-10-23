@@ -22,7 +22,7 @@ class UpdateStore(private val context: Context) {
     private val blobs=File(root,"blobs").apply{mkdirs()}
     private fun pointer()=AtomicFile(File(root,"active.json"))
     fun current(target: String): PublishedUpdate? = synchronized(guard) {
-        require(target=="3ds"||target=="android")
+        require(target=="3ds"||target=="cia"||target=="android")
         runCatching {
             val p=JSONObject(pointer().readFully().toString(Charsets.UTF_8)).getJSONObject(target);val sha=p.getString("sha256")
             require(sha.matches(Regex("[0-9a-f]{64}")))
@@ -31,8 +31,13 @@ class UpdateStore(private val context: Context) {
         }.getOrNull()
     }
     fun blob(target: String,sha: String): File? {
-        if(target !in setOf("3ds","android")||!sha.matches(Regex("[0-9a-f]{64}")))return null
-        return File(blobs,"$sha.${if(target=="3ds")"3dsx" else "apk"}").takeIf{it.isFile}
+        if(target !in setOf("3ds","cia","android")||!sha.matches(Regex("[0-9a-f]{64}")))return null
+        val extension=when(target){"3ds"->"3dsx";"cia"->"cia";else->"apk"}
+        return File(blobs,"$sha.$extension").takeIf{it.isFile}
+    }
+    fun ciaFile(): File? = current("cia")?.let { update ->
+        require(UpdatePackage.sha256(update.file)==update.sha256){"保存したCIAが破損しています"}
+        update.file
     }
     fun manifest(): ByteArray? = current("3ds")?.let { "SGAPP 1 ${it.size} ${it.sha256}\n".toByteArray(Charsets.US_ASCII) }
     private fun certs(info: PackageInfo): Set<String> {
@@ -57,7 +62,8 @@ class UpdateStore(private val context: Context) {
             // Validate every target before changing either published pointer.
             val checked=candidates.map { c -> c to if(c.target=="android")inspectApk(c.file) else c.label }
             val result=checked.map { (c,label) ->
-                val destination=File(blobs,"${c.sha256}.${if(c.target=="3ds")"3dsx" else "apk"}")
+                val extension=when(c.target){"3ds"->"3dsx";"cia"->"cia";else->"apk"}
+                val destination=File(blobs,"${c.sha256}.$extension")
                 if(!destination.isFile){
                     val staging=File(blobs,".${UUID.randomUUID()}.tmp")
                     try {
@@ -66,6 +72,7 @@ class UpdateStore(private val context: Context) {
                         require(staging.renameTo(destination)){"更新ファイルを保存できません"}
                     } finally { staging.delete() }
                 }
+                require(destination.isFile && UpdatePackage.sha256(destination)==c.sha256){"保存した更新ファイルのSHA-256が一致しません"}
                 PublishedUpdate(c.target,destination,c.sha256,c.size,label)
             }
             val document=runCatching{JSONObject(pointer().readFully().toString(Charsets.UTF_8))}.getOrElse{JSONObject()}
