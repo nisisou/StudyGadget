@@ -1,0 +1,95 @@
+{
+  "name": "studygadget-tools",
+  "displayName": "Study Gadget Tools",
+  "description": "3DS UIプレビュー・ビルド・スマホ経由更新",
+  "version": "0.1.0",
+  "publisher": "nishisou",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "workspaceContains:assets/main.c"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "studygadget.preview",
+        "title": "Study Gadget: 画面プレビュー",
+        "icon": "$(device-mobile)"
+      },
+      {
+        "command": "studygadget.build",
+        "title": "Study Gadget: 3DSをビルド",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "studygadget.deploy",
+        "title": "Study Gadget: ビルドして3DSへ更新",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "studygadget.pair",
+        "title": "Study Gadget: 親機スマホを設定",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "studygadget.emulator",
+        "title": "Study Gadget: 実機エミュレーターを起動",
+        "icon": "$(debug-start)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "studygadget.preview",
+          "when": "resourceFilename == main.c",
+          "group": "navigation@1"
+        },
+        {
+          "command": "studygadget.build",
+          "when": "resourceFilename == main.c",
+          "group": "navigation@2"
+        },
+        {
+          "command": "studygadget.deploy",
+          "when": "resourceFilename == main.c",
+          "group": "navigation@3"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Study Gadget",
+      "properties": {
+        "studygadget.python": {
+          "type": "string",
+          "default": "python",
+          "description": "Python 3実行ファイル"
+        },
+        "studygadget.powershell": {
+          "type": "string",
+          "default": "powershell.exe",
+          "description": "ビルド用PowerShell"
+        },
+        "studygadget.emulator": {
+          "type": "string",
+          "default": "",
+          "description": "任意の3DSエミュレーター実行ファイル。起動引数にビルド済み3DSXを渡します。"
+        },
+        "studygadget.devkitPro": {
+          "type": "string",
+          "default": "C:\\devkitPro",
+          "description": "Windows devkitProのインストール先"
+        }
+      }
+    }
+  }
+}

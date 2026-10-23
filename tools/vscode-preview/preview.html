@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-%NONCE%'; script-src 'nonce-%NONCE%' %CSP%; img-src %CSP% data:; connect-src %CSP%;">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Study Gadget UI Preview</title>
+<style nonce="%NONCE%">
+*{box-sizing:border-box}body{margin:0;padding:20px;font-family:var(--vscode-font-family,system-ui);background:var(--vscode-editor-background,#101522);color:var(--vscode-editor-foreground,#edf2ff)}
+header{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}h1{font-size:19px;margin:0}small,.muted{color:var(--vscode-descriptionForeground,#a0aec5)}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}
+button,select{font:inherit;padding:8px 12px;color:var(--vscode-button-foreground,#fff);background:var(--vscode-button-background,#254665);border:1px solid #64748b55;border-radius:6px;cursor:pointer}button:hover{filter:brightness(1.2)}
+.device{background:#202733;border:1px solid #526073;border-radius:25px;padding:22px 20px;margin:20px auto;max-width:460px;box-shadow:0 12px 40px #0004}.screen{position:relative;margin:auto;overflow:hidden;background:#121626;border:4px solid #0b1019;border-radius:4px;max-width:100%}.screen.top{width:408px;aspect-ratio:400/240}.screen.bottom{width:328px;aspect-ratio:320/240;cursor:crosshair}.screen canvas{width:100%;height:100%;display:block}.overlay{position:absolute;inset:0;pointer-events:none}.hinge{height:26px;display:flex;align-items:center;justify-content:center;gap:9px}.hinge::before,.hinge::after{content:"";height:4px;width:65px;background:#0b1019;border-radius:4px}.dot{width:5px;height:5px;background:#6da4c4;border-radius:50%}
+.keys{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-top:15px}.keys button{min-width:42px;background:#334155}
+.options{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.status{font-size:12px;white-space:pre-wrap;line-height:1.6;padding:12px;border:1px solid #64748b44;border-radius:8px;margin-top:12px}.error{color:#ffadad}.note{font-size:12px;line-height:1.7;max-width:650px;margin:auto}.coordinate{text-align:center;font-size:11px;height:18px;color:#b7c5db;margin-top:8px}
+</style></head><body>
+<header><div><h1>Study Gadget <small>UI Preview</small></h1><small>assets/main.c の描画・タイマー処理を実行</small></div><span id="source" class="muted">準備中</span></header>
+<div class="toolbar"><button data-action="build">⚒ ビルド</button><button data-action="deploy">↑ ビルドして3DS更新</button><button data-action="pair">親機の設定</button><button data-action="reload">再読み込み</button></div>
+<div class="options"><label>時間 <select id="speed"><option value="1">1倍</option><option value="10">10倍</option><option value="60">60倍</option></select></label><label><input id="connected" type="checkbox">接続表示を模擬</label><button id="reset">状態をリセット</button></div>
+<div class="device"><div class="screen top"><canvas id="top" width="400" height="240"></canvas><canvas id="character" class="overlay" width="400" height="240"></canvas></div><div class="hinge"><i class="dot"></i></div><div class="screen bottom"><canvas id="bottom" width="320" height="240"></canvas></div><div class="coordinate" id="coordinate">下画面をクリックして操作</div><div class="keys"><button data-key="6">L −5</button><button data-key="4">Y 科目</button><button data-key="3">X キャラ</button><button data-key="2">B 停止</button><button data-key="1">A 開始</button><button data-key="5">R +5</button></div></div>
+<div id="status" class="status" role="status">Cコードを読み込み中…</div>
+<p class="note">UI・ボタン・タイマーのプレビューです。保存すると再コンパイルし、状態を初期化します。モデルとモーションも読み込みますが、字体・GPU・通信・SD保存・実機性能はエミュレートしません。実機更新は3DSを起動し、親機に接続して使います。</p>
+<script nonce="%NONCE%">window.previewAssets={model:"%MODEL_URL%",motions:"%MOTIONS_URL%"};</script>
+<script nonce="%NONCE%" src="%MODEL_JS%"></script><script nonce="%NONCE%" src="%PREVIEW_JS%"></script></body></html>
+

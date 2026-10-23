@@ -1,0 +1,23 @@
+
+assets/.gradle/
+assets/.android-local/
+assets/local.properties
+assets/build/
+assets/app/build/
+**/*.keystore
+**/*.jks
+diagnostics/
+release/
+**/__pycache__/
+*.elf
+
+# Generated binaries and local editor state
+*.3dsx
+assets/character.shbin
+assets/character_shader.c
+assets/character_shader.h
+assets/.gradle-local/
+assets/.kotlin/
+assets/.idea/
+.vscode-local/
+.codex/

@@ -1,0 +1,50 @@
+// Direct javac + in-process test verification when Gradle worker loopback sockets are unavailable.
+// No changes to the installed SDK, global Gradle cache, or Android credentials.
+allprojects {
+    tasks.withType(JavaCompile).configureEach {
+        options.fork = true
+        options.forkOptions.executable = new File(System.getProperty('java.home'),'bin/javac.exe').absolutePath
+        doFirst {
+            options.fork = true
+            options.forkOptions.executable = new File(System.getProperty('java.home'),'bin/javac.exe').absolutePath
+        }
+    }
+    afterEvaluate {
+        if (plugins.hasPlugin('com.android.application')) {
+            tasks.register('inspectJavaCompiler') {
+                doLast {
+                    tasks.withType(JavaCompile).each { t -> println "${t.name}: compiler=${t.javaCompiler.get().metadata.installationPath}, fork=${t.options.fork}, executable=${t.options.forkOptions.executable}, javaHome=${t.options.forkOptions.javaHome}; running=${System.getProperty('java.home')}" }
+                }
+            }
+            tasks.register('verifyUnitTestsInProcess') {
+                dependsOn {
+                    def standardTest=tasks.getByName('testDebugUnitTest')
+                    standardTest.taskDependencies.getDependencies(standardTest)
+                }
+                doLast {
+                    def testTask = tasks.getByName('testDebugUnitTest')
+                    def urls = testTask.classpath.files.collect { it.toURI().toURL() } as URL[]
+                    def loader = new URLClassLoader(urls, (ClassLoader)null)
+                    try {
+                        def classes=[]
+                        testTask.testClassesDirs.files.each { dir ->
+                            if(dir.exists())dir.eachFileRecurse { file ->
+                                if(file.name.endsWith('Test.class') && !file.name.contains('$')) {
+                                    def name=dir.toPath().relativize(file.toPath()).toString().replace(File.separatorChar,'.' as char).replaceAll(/\.class$/, '')
+                                    classes.add(loader.loadClass(name))
+                                }
+                            }
+                        }
+                        if(classes.isEmpty())throw new GradleException('No tests found')
+                        def core=loader.loadClass('org.junit.runner.JUnitCore').getDeclaredConstructor().newInstance()
+                        def result=core.run(classes as Class[])
+                        def report="JUnit: ${result.runCount} tests, ${result.failureCount} failures\n"+result.failures.join('\n')
+                        println report
+                        new File(project.rootDir,'../release/android-tests.txt').with { parentFile.mkdirs();text=report }
+                        if(!result.wasSuccessful())throw new GradleException('Unit tests failed')
+                    } finally { loader.close() }
+                }
+            }
+        }
+    }
+}

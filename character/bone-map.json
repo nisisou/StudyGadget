@@ -1,0 +1,125 @@
+{
+  "renamed": {
+    "ボーン": "hips",
+    "ボーン.004": "spine",
+    "ボーン.003": "chest",
+    "ボーン.001": "neck",
+    "ボーン.002": "head",
+    "髪1": "hair.back.01",
+    "髪2": "hair.back.02",
+    "髪3.L": "hair.side.L",
+    "髪3.R": "hair.side.R",
+    "ボーン.008.L": "shoulder.L",
+    "ボーン.009.L": "upper_arm.L",
+    "ボーン.010.L": "forearm.L",
+    "ボーン.011.L": "hand.L",
+    "ボーン.005.L": "upper_leg.L",
+    "ボーン.006.L": "lower_leg.L",
+    "ボーン.007.L": "foot.L",
+    "ボーン.008.R": "shoulder.R",
+    "ボーン.009.R": "upper_arm.R",
+    "ボーン.010.R": "forearm.R",
+    "ボーン.011.R": "hand.R",
+    "ボーン.005.R": "upper_leg.R",
+    "ボーン.006.R": "lower_leg.R",
+    "ボーン.007.R": "foot.R"
+  },
+  "attachments": [
+    {
+      "object": "clothes",
+      "bone": "chest"
+    },
+    {
+      "object": "円.001",
+      "bone": "head"
+    },
+    {
+      "object": "hair.3",
+      "bone": "head"
+    },
+    {
+      "object": "hair.1",
+      "bone": "head"
+    },
+    {
+      "object": "hair.2",
+      "bone": "head"
+    },
+    {
+      "object": "平面.006",
+      "bone": "head"
+    },
+    {
+      "object": "hair.6",
+      "bone": "head"
+    },
+    {
+      "object": "立方体",
+      "bone": "head"
+    },
+    {
+      "object": "hair.7",
+      "bone": "head"
+    },
+    {
+      "object": "skirt",
+      "bone": "hips"
+    },
+    {
+      "object": "立方体.004",
+      "bone": "foot.L"
+    },
+    {
+      "object": "立方体.005",
+      "bone": "head"
+    },
+    {
+      "object": "body.001",
+      "bone": "head"
+    },
+    {
+      "object": "立方体.001",
+      "bone": "head"
+    },
+    {
+      "object": "立方体.002",
+      "bone": "head"
+    },
+    {
+      "object": "平面",
+      "bone": "head"
+    },
+    {
+      "object": "body.002",
+      "bone": "head"
+    }
+  ],
+  "skeleton": 1295516257,
+  "materials": [
+    {
+      "material": "マテリアル.002",
+      "image": "無題",
+      "nodeGraphBaked": true
+    },
+    {
+      "material": "マテリアル.003",
+      "image": "無題",
+      "nodeGraphBaked": true
+    },
+    {
+      "material": "マテリアル.001",
+      "image": "無題",
+      "nodeGraphBaked": true
+    },
+    {
+      "material": "マテリアル.004",
+      "image": "無題",
+      "nodeGraphBaked": true
+    },
+    {
+      "material": "マテリアル",
+      "image": null,
+      "nodeGraphBaked": true
+    }
+  ]
+}

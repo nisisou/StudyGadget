@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "skeleton": 1295516257,
+  "bones": [
+    "hips",
+    "spine",
+    "chest",
+    "neck",
+    "head",
+    "hair.back.01",
+    "hair.back.02",
+    "hair.side.L",
+    "hair.side.R",
+    "shoulder.L",
+    "upper_arm.L",
+    "forearm.L",
+    "hand.L",
+    "shoulder.R",
+    "upper_arm.R",
+    "forearm.R",
+    "hand.R",
+    "upper_leg.L",
+    "lower_leg.L",
+    "foot.L",
+    "upper_leg.R",
+    "lower_leg.R",
+    "foot.R"
+  ],
+  "triangles": 2772,
+  "modelBytes": 4663832,
+  "crc": 1958203361,
+  "batches": [
+    [
+      0,
+      2076,
+      0
+    ],
+    [
+      2076,
+      6240,
+      1
+    ]
+  ],
+  "sha256": "5978252e9a74c41f0f28dbdd0bde93c0b421be909be9b9f4e920b316e0c52140",
+  "bounds": [
+    [
+      -0.2742075026035309,
+      -0.4193480610847473,
+      -0.2831132411956787
+    ],
+    [
+      0.2742075026035309,
+      0.348755419254303,
+      0.07924508303403854
+    ]
+  ]
+}

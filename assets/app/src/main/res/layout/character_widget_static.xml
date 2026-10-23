@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:padding="12dp" android:background="@drawable/widget_background">
+    <TextView android:id="@+id/widget_title" android:layout_width="match_parent" android:layout_height="32dp"
+        android:text="Study Companion  ›" android:textColor="#C4CDEE" android:textSize="12sp" android:gravity="center_vertical"
+        android:contentDescription="Study Companionを開く" />
+    <FrameLayout android:id="@+id/widget_frames" android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" />
+    <Chronometer android:id="@+id/widget_elapsed" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:textColor="#B5F4D5" android:textSize="15sp" android:visibility="gone" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal">
+        <TextView android:id="@+id/widget_mode" android:layout_width="0dp" android:layout_height="match_parent"
+            android:layout_weight="1" android:text="自動 · 待機" android:textColor="#FFFFFF" android:textSize="15sp"
+            android:gravity="center" android:contentDescription="状態を切り替える。自動、待機、集中、休憩、達成、応援、睡眠" />
+        <TextView android:id="@+id/widget_pause" android:layout_width="48dp" android:layout_height="match_parent"
+            android:text="静止" android:textColor="#C4CDEE" android:textSize="12sp" android:gravity="center"
+            android:contentDescription="アニメーションの再生または静止を切り替える" />
+    </LinearLayout>
+    <TextView android:id="@+id/widget_detail" android:layout_width="match_parent" android:layout_height="32dp"
+        android:text="キャラクターを準備中…" android:textColor="#A8B4D6" android:textSize="10sp" android:gravity="center" />
+</LinearLayout>

@@ -1,0 +1,72 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Study Gadget: 3DSをビルド",
+      "type": "process",
+      "command": "${command:studygadget.resolvePython}",
+      "args": [
+        "${workspaceFolder}/tools/build_3ds.py",
+        "--devkit",
+        "${config:studygadget.devkitPro}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [
+        {
+          "base": "$gcc",
+          "fileLocation": [
+            "relative",
+            "${workspaceFolder}/assets"
+          ]
+        }
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Study Gadget: プレビューを検証",
+      "type": "process",
+      "command": "python",
+      "args": [
+        "${workspaceFolder}/tools/ui_preview.py",
+        "--check"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Study Gadget: Androidをビルド",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/tools/build-android.ps1"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Study Gadget: VS Code拡張を作成",
+      "type": "process",
+      "command": "python",
+      "args": [
+        "${workspaceFolder}/tools/package_vscode.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
