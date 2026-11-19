@@ -42,5 +42,22 @@ class MobileCITests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as directory:
    root=Path(directory);self.fixtures(root);(root/'3ds/studygadget.3dsx').write_bytes(b'wrong')
    with self.assertRaises(ValueError):bundle('3ds','test',root,root/'out')
+
+ def test_three_ds_bundle_includes_cia_when_present(self):
+  with tempfile.TemporaryDirectory() as directory:
+   root=Path(directory);incoming=root/'in';incoming.mkdir();self.fixtures(incoming)
+   cia=bytearray(0x2040+0x200)
+   struct.pack_into('<I',cia,0,0x2020)
+   struct.pack_into('<Q',cia,24,0x200)
+   cia[0x2040+0x100:0x2040+0x104]=b'NCCH'
+   struct.pack_into('<Q',cia,0x2040+0x118,0x000400000F764200)
+   (incoming/'3ds/studygadget.cia').write_bytes(cia)
+   out=root/'out'
+   result=bundle('3ds','test-cia',incoming,out)
+   self.assertEqual({x['target'] for x in result['files']},{'3ds','cia'})
+   self.assertTrue((out/'studygadget.cia').is_file())
+   with ZipFile(out/'StudyGadget-update.sgupdate') as z:
+    self.assertIn('studygadget.cia',z.namelist())
+
 if __name__=='__main__':unittest.main(verbosity=2)
 
