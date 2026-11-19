@@ -1,4 +1,4 @@
-# Study Gadget キャラクター版
+# CFW導入済みの3DS向けの学習記録アプリです、AI連携のためのパブリック状態であり完全に自分専用。絶対に触らないでください。Study Gadget キャラクター版
 
 HOMEメニュー用アイコン・動く3Dバナーの素材と、PCへのツール導入・変換・CIA作成・実機確認の手順は [home-menu/README.md](home-menu/README.md) にあります。アイコン付き3DSXはビルド済みです。CGFXの接続・両面補正、バイナリ検査とCIA生成まで完了しています。CIAは `release/cia/studygadget.cia` です。実機での表示・起動は未確認です。
 
