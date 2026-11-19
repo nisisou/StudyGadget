@@ -114,7 +114,7 @@ jobs:
           "$RUNNER_TEMP/character-python/bin/python" tools/test_character.py
           "$RUNNER_TEMP/character-python/bin/python" tools/export_home_banner.py
           if [ ! -f home-menu/banner.cgfx ]; then
-            git clone [https://github.com/skyfloogle/pycgfx.git](https://github.com/skyfloogle/pycgfx.git) "$RUNNER_TEMP/pycgfx"
+                       git clone https://github.com/skyfloogle/pycgfx.git "$RUNNER_TEMP/pycgfx"
             git -C "$RUNNER_TEMP/pycgfx" checkout 1f78850086f3a77c41e07162e842f97a5bf3c18a
             "$RUNNER_TEMP/character-python/bin/python" tools/convert_home_cgfx.py \
               --source home-menu/banner.glb \
