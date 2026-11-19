@@ -82,10 +82,17 @@ class GitHubCiActivity : ComponentActivity() {
                         importedRun=selected.id
                         message="検証と取り込みが完了しました。「更新・配信画面」で確認できます。"
                         val three=imported.firstOrNull { it.target=="3ds" }
+                        val cia=imported.firstOrNull { it.target=="cia" }
                         if(three!=null && apply3ds) {
                             withContext(Dispatchers.IO) { DevAutomation(applicationContext).schedule(three.sha256) }
                             SyncService.start(this@GitHubCiActivity)
-                            message="3DSへの自動更新を予約しました。3DSをこのスマホに接続してアプリを起動してください。"
+                            message=if(cia!=null)
+                                "3DSへの自動更新を予約し、FBI用CIAの準備も完了しました。「更新・配信画面を開く」からFBI QRコードを表示できます。"
+                            else
+                                "3DSへの自動更新を予約しました。3DSをこのスマホに接続してアプリを起動してください。"
+                        } else if(cia!=null) {
+                            SyncService.start(this@GitHubCiActivity)
+                            message="FBI用CIAを取り込み、親機サーバーを起動しました。「更新・配信画面を開く」からQRコードを表示し、3DSのFBIで読み取ってください。"
                         }
                     } catch(e: CancellationException) { throw e }
                     catch(e: Exception) { message=errorText(e) }
@@ -235,7 +242,7 @@ class GitHubCiActivity : ComponentActivity() {
                             },enabled=!busy&&!active) { Text("接続情報を削除") }
                             Text("トークンはこの端末内で暗号化して保存します。チャットやリポジトリへ貼り付ける必要はありません。",style=MaterialTheme.typography.bodySmall)
                         }
-                        OutlinedButton(onClick={startActivity(Intent(this@GitHubCiActivity,UpdateActivity::class.java))},enabled=!busy,modifier=Modifier.fillMaxWidth()) { Text("更新・配信画面を開く") }
+                        OutlinedButton(onClick={startActivity(Intent(this@GitHubCiActivity,UpdateActivity::class.java))},enabled=!busy,modifier=Modifier.fillMaxWidth()) { Text("更新・配信画面を開く（FBI QRコード・APK更新）") }
                         TextButton(onClick={finish()},enabled=!busy) { Text("戻る") }
                     }
                 }
