@@ -121,7 +121,6 @@ AccessControlInfo:
   FileSystemAccess:
    - DirectSdmc
   IoAccessControl:
-   - FsMountSdmc
   AccessibleSaveDataIds:
 
 SystemControlInfo:
